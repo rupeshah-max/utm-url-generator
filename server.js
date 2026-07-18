@@ -335,6 +335,7 @@ async function fetchFinalUrl({
 
   const browser = await puppeteer.launch({
     headless: true,
+    executablePath: "/opt/render/.cache/puppeteer/chrome/linux-150.0.7871.24/chrome-linux64/chrome",
     args: [
       `--proxy-server=${anonymizedProxy}`,
       '--no-sandbox',
