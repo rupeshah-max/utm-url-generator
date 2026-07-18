@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const dotenv = require('dotenv');
+process.env.PUPPETEER_CACHE_DIR = "/opt/render/project/src/.cache/puppeteer";
 const puppeteer = require('puppeteer');
 const proxyChain = require('proxy-chain');
 
