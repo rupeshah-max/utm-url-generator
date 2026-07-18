@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scheduled Results — Nimble Campaign URL Generator</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" />
+</head>
+<body>
+  <div class="aura" aria-hidden="true">
+    <span class="blob blob-a"></span>
+    <span class="blob blob-b"></span>
+    <span class="blob blob-c"></span>
+  </div>
+  <main class="container">
+    <header class="page-head">
+      <div class="page-head-text">
+        <p class="eyebrow">Proxy Network Console</p>
+        <h1>Scheduled Results</h1>
+        <p class="subhead">Every resolved URL produced by a scheduled import, searchable and exportable just like Home.</p>
+      </div>
+    </header>
+
+    <section class="glass data-table">
+      <div class="table-header">
+        <h2>Resolved Campaigns</h2>
+
+        <div class="toolbar">
+          <div class="search-field">
+            <input type="search" id="searchInput" placeholder="Search URL, name, tags, country..." aria-label="Search results" />
+          </div>
+
+          <select id="filterCountry" aria-label="Filter by country">
+            <option value="">All Countries</option>
+            <option value="US">🇺🇸 United States</option>
+            <option value="GB">🇬🇧 United Kingdom</option>
+            <option value="IN">🇮🇳 India</option>
+            <option value="DE">🇩🇪 Germany</option>
+            <option value="FR">🇫🇷 France</option>
+            <option value="CA">🇨🇦 Canada</option>
+            <option value="AU">🇦🇺 Australia</option>
+            <option value="JP">🇯🇵 Japan</option>
+            <option value="BR">🇧🇷 Brazil</option>
+            <option value="RU">🇷🇺 Russia</option>
+            <option value="BY">🇧🇾 Belarus</option>
+            <option value="HU">🇭🇺 Hungary</option>
+            <option value="SK">🇸🇰 Slovakia</option>
+          </select>
+
+          <select id="filterUaType" aria-label="Filter by user agent type">
+            <option value="">All Devices</option>
+            <option value="random">Random</option>
+            <option value="desktop">Desktop</option>
+            <option value="mobile">Mobile</option>
+            <option value="tablet">Tablet</option>
+          </select>
+
+          <div class="date-range-field">
+            <input type="text" id="dateFrom" placeholder="From date" />
+            <span>&ndash;</span>
+            <input type="text" id="dateTo" placeholder="To date" />
+          </div>
+
+          <select id="sortBy" aria-label="Sort results">
+            <option value="newest">Sort: Newest First</option>
+            <option value="importOrder">Sort: Import Order</option>
+          </select>
+
+          <button type="button" id="exportCsv" class="ghost small">Export CSV</button>
+          <button type="button" id="exportXlsx" class="ghost small">Export XLSX</button>
+          <button type="button" id="resetFilters" class="ghost small">Reset</button>
+          <button type="button" id="refreshResults" class="ghost small">Refresh</button>
+        </div>
+      </div>
+
+      <div class="pagination-top">
+        <div class="page-size">
+          <label for="pageSize">Rows per page</label>
+          <select id="pageSize">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="custom">Custom</option>
+            <option value="all">All</option>
+          </select>
+          <input type="number" id="customPageSize" min="1" max="1000" placeholder="Rows" aria-label="Custom rows per page" hidden />
+        </div>
+        <div class="page-nav">
+          <button type="button" id="prevPageBtn" class="ghost small">‹ Prev</button>
+          <span id="pageIndicator">Page 1 of 1</span>
+          <button type="button" id="nextPageBtn" class="ghost small">Next ›</button>
+        </div>
+      </div>
+
+      <p id="resultCount" class="result-count"></p>
+
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Row #</th>
+              <th>Campaign URL</th>
+              <th>Country</th>
+              <th>User Agent</th>
+              <th>Campaign Name</th>
+              <th>Tags / Notes</th>
+              <th>Final URL</th>
+              <th>Date Added</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <div class="page-nav">
+          <button type="button" id="prevPageBtn2" class="ghost small">‹ Prev</button>
+          <span id="pageIndicator2">Page 1 of 1</span>
+          <button type="button" id="nextPageBtn2" class="ghost small">Next ›</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+  <script src="./js/common.js"></script>
+  <script src="./js/scheduled-results.js" defer></script>
+  <script src="./js/nav.js" defer></script>
+</body>
+</html>
