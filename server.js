@@ -334,7 +334,7 @@ async function fetchFinalUrl({
   console.log('----------------------------------------');
 
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: "new",
     args: [
       `--proxy-server=${anonymizedProxy}`,
       '--no-sandbox',

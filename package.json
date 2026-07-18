@@ -12,6 +12,6 @@
     "express": "^4.19.2",
     "nodemon": "^3.1.14",
     "proxy-chain": "^2.5.3",
-    "puppeteer": "^22.15.0"
+    "puppeteer": "^25.3.0"
   }
 }
