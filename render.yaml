@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: nimble-campaign-url-generator
+    runtime: node
+    plan: free
+
+    buildCommand: |
+      npm install
+      npx puppeteer browsers install chrome
+
+    startCommand: npm start
+
+    envVars:
+      - key: NODE_ENV
+        value: production
