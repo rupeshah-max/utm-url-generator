@@ -808,6 +808,24 @@ async function schedulerTick() {
 setInterval(schedulerTick, SCHEDULE_POLL_INTERVAL_MS);
 setTimeout(schedulerTick, 3000); // also check shortly after boot
 
+// Ping the URL immediately when the script starts.
+// Continue pinging it every 14 minutes.
+const url = process.env.PING_URL || '';
+async function pingUrl() {
+  try {
+    const response = await fetch(url);
+    console.log(
+      `[${new Date().toISOString()}] Status: ${response.status}`
+    );
+  } catch (error) {
+    console.error(
+      `[${new Date().toISOString()}] Error: ${error.message}`
+    );
+  }
+}
+pingUrl();
+setInterval(pingUrl, 14 * 60 * 1000);
+
 app.listen(PORT, () => {
   console.log(`Server running at http://${HOST}:${PORT}`);
 });
