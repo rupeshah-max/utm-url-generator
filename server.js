@@ -9,8 +9,8 @@ const proxyChain = require('proxy-chain');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5500;
-const HOST = process.env.HOST || localhost;
+const PORT = process.env.SERVER_PORT || 5500;
+const HOST = process.env.SERVER_HOST || "localhost";
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -811,7 +811,7 @@ setTimeout(schedulerTick, 3000); // also check shortly after boot
 
 // Ping the URL immediately when the script starts.
 // Continue pinging it every 14 minutes.
-const url = process.env.PING_URL || '';
+const url = process.env.PING_URL || 'https://utm-url-generator-fnve.onrender.com';
 async function pingUrl() {
   try {
     const response = await fetch(url);
