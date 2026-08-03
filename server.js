@@ -2,15 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const dotenv = require('dotenv');
-process.env.PUPPETEER_CACHE_DIR = "/opt/render/project/src/.cache/puppeteer";
 const puppeteer = require('puppeteer');
 const proxyChain = require('proxy-chain');
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.SERVER_PORT || 5500;
-const HOST = process.env.SERVER_HOST || "localhost";
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -372,7 +370,8 @@ async function fetchFinalUrl({
     page.on('request', (req) => {
       const type = req.resourceType();
       // Skip heavy resources
-      if ( type === 'image' || type === 'font' || type === 'media') {
+      if ( type === 'image' || type === 'font' || type === 'media'
+      ) {
         req.abort();
       } else {
         req.continue();
@@ -705,6 +704,7 @@ app.get('/api/scheduled-results', (_req, res) => {
   for (const task of scheduledTasks) {
     for (const row of task.rows) {
       if (row.status === 'pending') continue;
+      if (row.hiddenFromResults) continue;
       results.push({
         id: `${task.id}:${row.rowNumber}`,
         taskId: task.id,
@@ -727,6 +727,78 @@ app.get('/api/scheduled-results', (_req, res) => {
   }
 
   res.json({ success: true, results });
+});
+
+// Locates a result row from its composite id "taskId:rowNumber".
+function findResultRow(id) {
+  const sep = String(id).lastIndexOf(':');
+  if (sep === -1) return null;
+
+  const taskId = id.slice(0, sep);
+  const rowNumber = Number(id.slice(sep + 1));
+
+  const task = scheduledTasks.find((t) => t.id === taskId);
+  if (!task) return null;
+
+  const row = task.rows.find((r) => r.rowNumber === rowNumber);
+  if (!row) return null;
+
+  return { task, row };
+}
+
+// Soft-deletes a single resolved row from the results view. The row stays on
+// its parent task (so Scheduled Tasks progress counts stay accurate) but is
+// excluded from GET /api/scheduled-results from now on.
+app.delete('/api/scheduled-results/:id', (req, res) => {
+  const found = findResultRow(req.params.id);
+  if (!found) return res.status(404).json({ success: false, message: 'Result row not found.' });
+
+  found.row.hiddenFromResults = true;
+  saveTasks();
+  res.json({ success: true });
+});
+
+// Clears every currently-visible result row (soft delete on all of them).
+app.delete('/api/scheduled-results', (_req, res) => {
+  for (const task of scheduledTasks) {
+    for (const row of task.rows) {
+      if (row.status !== 'pending') row.hiddenFromResults = true;
+    }
+  }
+  saveTasks();
+  res.json({ success: true });
+});
+
+// Re-runs the proxy fetch for a single resolved row and updates it in place.
+app.post('/api/scheduled-results/:id/refresh', async (req, res) => {
+  const found = findResultRow(req.params.id);
+  if (!found) return res.status(404).json({ success: false, message: 'Result row not found.' });
+
+  const { row } = found;
+
+  try {
+    const result = await fetchFinalUrl({
+      campaignUrl: row.campaignUrl,
+      country: row.country,
+      userAgentType: row.userAgentType,
+    });
+
+    row.status = 'success';
+    row.finalUrl = result.finalUrl;
+    row.redirectChain = result.redirectChain || [];
+    row.errorMessage = '';
+    row.generatedAt = Date.now();
+    saveTasks();
+
+    res.json({ success: true, finalUrl: row.finalUrl, redirectChain: row.redirectChain });
+  } catch (err) {
+    row.status = 'failed';
+    row.errorMessage = err.message;
+    row.generatedAt = Date.now();
+    saveTasks();
+
+    res.status(400).json({ success: false, message: err.message });
+  }
 });
 
 function newId() {
@@ -809,24 +881,6 @@ async function schedulerTick() {
 setInterval(schedulerTick, SCHEDULE_POLL_INTERVAL_MS);
 setTimeout(schedulerTick, 3000); // also check shortly after boot
 
-// Ping the URL immediately when the script starts.
-// Continue pinging it every 14 minutes.
-const url = process.env.PING_URL || 'https://utm-url-generator-fnve.onrender.com';
-async function pingUrl() {
-  try {
-    const response = await fetch(url);
-    console.log(
-      `[${new Date().toISOString()}] Status: ${response.status}`
-    );
-  } catch (error) {
-    console.error(
-      `[${new Date().toISOString()}] Error: ${error.message}`
-    );
-  }
-}
-pingUrl();
-setInterval(pingUrl, 14 * 60 * 1000);
-
 app.listen(PORT, () => {
-  console.log(`Server running at http://${HOST}:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

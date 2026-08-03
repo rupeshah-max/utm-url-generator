@@ -3,6 +3,7 @@ const $ = (selector) => document.querySelector(selector);
 let results = [];
 let filterState = { search: '', country: '', uaType: '', sortBy: 'newest', dateFrom: null, dateTo: null };
 let paginationState = { page: 1, pageSize: 10 };
+const refreshingIds = new Set();
 
 async function loadResults({ silent } = {}) {
   try {
@@ -73,6 +74,7 @@ function createRedirectChainRow(r) {
 function createRow(r, rowNumber) {
   const tr = document.createElement('tr');
   const chain = getRedirectChain(r);
+  const isBusy = refreshingIds.has(r.id);
 
   tr.innerHTML = `
     <td class="row-num-cell">
@@ -95,6 +97,8 @@ function createRow(r, rowNumber) {
     <td>${escapeHtml(formatDate(r.generatedAt || r.createdAt))}</td>
     <td class="action-cell">
       <button class="ghost small show-chain" data-id="${r.id}">Show Redirect Chains${chain.length ? ` (${chain.length})` : ''}</button>
+      <button class="ghost small refresh" data-id="${r.id}" ${isBusy ? 'disabled' : ''}>${isBusy ? 'Refreshing...' : 'Refresh'}</button>
+      <button class="delete" data-id="${r.id}">Delete</button>
     </td>
   `;
 
@@ -102,6 +106,9 @@ function createRow(r, rowNumber) {
     const chainRow = document.querySelector(`tr.redirect-row[data-chain-for="${CSS.escape(r.id)}"]`);
     if (chainRow) chainRow.hidden = !chainRow.hidden;
   });
+
+  tr.querySelector('.refresh').addEventListener('click', () => refreshResultRow(r));
+  tr.querySelector('.delete').addEventListener('click', () => deleteResultRow(r));
 
   const copyBtn = tr.querySelector('.copy-btn');
   if (copyBtn) copyBtn.addEventListener('click', () => copyToClipboard(copyBtn, r.finalUrl));
@@ -221,6 +228,55 @@ function exportTable(format) {
   notifyToast('CSV exported', `${rows.length} filtered rows exported.`, 'success');
 }
 
+async function refreshResultRow(r) {
+  refreshingIds.add(r.id);
+  renderTable();
+  notifyToast('Refresh started', r.campaignName || r.campaignUrl);
+
+  try {
+    const res = await fetch(`/api/scheduled-results/${encodeURIComponent(r.id)}/refresh`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok || data.success === false) throw new Error(data.message || 'Refresh failed.');
+
+    notifyToast('Refresh complete', 'Final URL regenerated successfully.', 'success');
+  } catch (err) {
+    notifyToast('Refresh failed', err.message, 'error', 4500);
+  } finally {
+    refreshingIds.delete(r.id);
+    await loadResults();
+  }
+}
+
+async function deleteResultRow(r) {
+  if (!confirm('Remove this row from Scheduled Results? It stays on the source task for record-keeping.')) return;
+
+  try {
+    const res = await fetch(`/api/scheduled-results/${encodeURIComponent(r.id)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok || data.success === false) throw new Error(data.message || 'Delete failed.');
+
+    notifyToast('Row deleted', 'Removed from Scheduled Results.', 'success');
+    await loadResults();
+  } catch (err) {
+    notifyToast('Delete failed', err.message, 'error');
+  }
+}
+
+async function clearAllResults() {
+  if (!confirm('Clear all scheduled results from this view?')) return;
+
+  try {
+    const res = await fetch('/api/scheduled-results', { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok || data.success === false) throw new Error(data.message || 'Clear failed.');
+
+    notifyToast('Results cleared', 'All rows removed from this view.', 'success');
+    await loadResults();
+  } catch (err) {
+    notifyToast('Clear failed', err.message, 'error');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadResults();
   setInterval(() => loadResults({ silent: true }), 10000);
@@ -269,6 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('#refreshResults').addEventListener('click', () => loadResults());
+  $('#clearAll').addEventListener('click', clearAllResults);
   $('#exportCsv').addEventListener('click', () => exportTable('csv'));
   $('#exportXlsx').addEventListener('click', () => exportTable('xlsx'));
 
