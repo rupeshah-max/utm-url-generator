@@ -884,7 +884,7 @@ setTimeout(schedulerTick, 3000); // also check shortly after boot
 
 // Ping the URL immediately when the script starts.
 // Continue pinging it every 14 minutes.
-const url = process.env.PING_URL || 'https://utm-url-generator-fnve.onrender.com';
+const url = process.env.PING_URL || 'https://utm-url-generator-fnve.onrender.com/index.html';
 async function pingUrl() {
   try {
     const response = await fetch(url);
